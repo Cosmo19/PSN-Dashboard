@@ -1,15 +1,4 @@
-# Content Performance Dashboard
-
-A Dockerised Next.js dashboard that joins a YouTube post library to daily performance deltas and visualises the result with D3.
-
-- **Next.js 15** (App Router, TypeScript, standalone output)
-- **Tailwind CSS** for the dark UI
-- **D3** for scales, shapes and axes - marks are rendered by React so every chart is reactive and tooltip-driven
-- **PapaParse** for CSV parsing, server-side
-
----
-
-# Section A - Data Preparation and SQL Analysis
+# Section A - SQL Analysis
 
 Before developing the dashboard, the supplied CSV datasets were imported into **DB Browser for SQLite**. This stage ensured the data was correctly structured, cleaned where necessary, and suitable for SQL analysis.
 
@@ -22,8 +11,6 @@ The database schema was reviewed to ensure:
 - Appropriate data types were assigned
 - Primary and foreign keys were correctly configured
 - The relationship between `posts.video_id` and `poststats.video_id` was established
-
----
 
 ## Data normalisation
 
@@ -60,8 +47,6 @@ The values were then converted into integers:
 UPDATE poststats
 SET views = CAST(views AS INTEGER);
 ```
-
----
 
 ## SQL Analysis
 
@@ -126,15 +111,27 @@ ORDER BY views_last_28_days DESC
 LIMIT 5;
 ```
 
----
-
 # Section B - Dashboard Implementation
 
-## Running
+## Content Performance Dashboard
+
+
+A Dockerised Next.js dashboard that joins a YouTube post library to daily performance deltas and visualises the result with D3.
+
+- **Next.js** (App Router, TypeScript, standalone output)
+- **Tailwind CSS** for the UI components
+- **D3** for scales, shapes and axes - marks are rendered by React so every chart is reactive and tooltip-driven
+- **PapaParse** for CSV parsing
+
+---
 
 ### Docker
 
+Docker isn't directly related to Next.js, YouTube data, or D3. It's simply the technology used to package and run the dashboard reliably across any device be MacOS or Windows.
+
 The application can be started using Docker and is served on <http://localhost:3000>.
+
+---
 
 ```bash
 docker compose up --build
@@ -146,8 +143,6 @@ docker compose up --build
 npm install
 npm run dev
 ```
-
----
 
 ## Data model
 
@@ -176,8 +171,6 @@ One row per post per day (187,974 rows).
 | `data_date` | Source format `DD/MM/YYYY` |
 | `likes`, `comments`, `shares`, `views` | Daily metric deltas |
 | `watchtime` | Daily watch time in minutes |
-
----
 
 ## Parsing considerations
 
@@ -209,8 +202,6 @@ A small number of high-view posts report zero watch time.
 
 These posts are excluded from retention calculations, and the dashboard displays a warning rather than silently excluding them.
 
----
-
 ## Dashboard features
 
 The dashboard includes:
@@ -237,9 +228,7 @@ All charts automatically observe their container width and redraw when resized. 
 
 The scatter plots use meaningful logarithmic intervals rather than D3's default minor ticks. Video length is displayed as readable durations such as `0:10`, `1:00`, `10:00` and `3:00:00`, while reach is displayed using compact labels such as `1K`, `10K`, `100K`, `1M` and `10M`.
 
----
-
-## Dataset inspector
+## Dataset Inspector
 
 The **View dataset** feature provides a row-level inspection interface for validating the parsing process.
 
@@ -252,7 +241,7 @@ Each row displays:
 
 Rows containing comma-separated numeric values remain highlighted to demonstrate that parsing has been performed correctly.
 
-### Available flags
+### Available flags:
 
 | Flag | Meaning |
 | --- | --- |
@@ -279,8 +268,6 @@ For the bundled dataset:
   - 29,930 rows containing thousands separators
   - 3,286 rows containing negative metric values
 
----
-
 ## Replacing the data
 
 The **Replace CSVs** feature allows users to upload a replacement `posts.csv` and `poststats.csv` pair.
@@ -292,8 +279,6 @@ The upload process:
 - Stores uploaded files in memory only
 - Does not write data to disk
 - Allows the bundled dataset to be restored at any time
-
----
 
 ## API
 
@@ -315,10 +300,18 @@ The upload process:
 | `q` | Searches across all cells |
 | `filter` | `all`, `flagged` or `separators` |
 
-Example:
+**Example:**
 
 ```bash
 curl "http://localhost:3000/api/dataset/rows?table=poststats&filter=separators&limit=5"
 ```
 
-The client receives post-level totals together with daily statistics grouped by date, channel and format (approximately 3,800 rows). This allows every dashboard filter combination to be recalculated on the client without requiring additional API requests.
+# Section C - Reflection & AI Tooling
+
+### Using Claude & Cursor in my workflow:
+
+I view AI as an extension of my knowledge rather than a replacement for it. For this exercise, I used Cursor's AI tooling throughout the development process. It helped scaffold the Dockerised Next.js dashboard, generate D3 visualisations, implement CSV parsing and data normalisation, troubleshoot issues, and refine responsiveness and theming. It accelerated development by handling repetitive implementation tasks and providing starting points, allowing me to spend more time evaluating the visualisations and improving the overall user experience with quick troubleshooting. I remained responsible for reviewing, testing, and adapting the generated code to ensure it met the projects requirements.
+
+### One thing I'd improve if I had more time:
+
+Albeit a quick exercise in creating a simple dashboard for the content & data team, I wanted to develop further on this by adding even more metrics of visualisations to the dashboard. Also, I would've wanted to improve mobile usability, add better data checks, save uploaded data permanently (maybe use a PostgreSQL container?), and let users export reports or customise the charts axes?
