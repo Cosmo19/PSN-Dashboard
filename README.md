@@ -50,6 +50,8 @@ SET views = CAST(views AS INTEGER);
 
 ## SQL Analysis
 
+<img width="1072" height="1134" alt="table_schema" src="https://github.com/user-attachments/assets/397bccbe-45fc-4f29-b3d0-aef01d22e2b0" />
+
 ### 1. Total views per video
 
 Calculates the lifetime total number of views for every video.
@@ -90,7 +92,7 @@ ORDER BY
 
 ### 3. Top five videos by views over the previous 28 days
 
-Returns the five highest-performing videos during the latest 28-day reporting period.
+Returns the five highest-performing videos during the latest 28-day reporting period (since last upload, as the dataset 28 days ago from today's date returns nothing).
 
 ```sql
 SELECT
@@ -113,8 +115,9 @@ LIMIT 5;
 
 # Section B - Dashboard Implementation
 
-## Content Performance Dashboard
+<img width="1728" height="1117" alt="dashboard" src="https://github.com/user-attachments/assets/aad8f045-5211-423f-8775-2736eabd5939" />
 
+## Content Performance Dashboard
 
 A Dockerised Next.js dashboard that joins a YouTube post library to daily performance deltas and visualises the result with D3.
 
