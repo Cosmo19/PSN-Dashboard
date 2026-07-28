@@ -1,149 +1,324 @@
 # Content Performance Dashboard
 
-A Dockerised Next.js dashboard that joins a YouTube post library to daily performance
-deltas and visualises the result with D3.
+A Dockerised Next.js dashboard that joins a YouTube post library to daily performance deltas and visualises the result with D3.
 
 - **Next.js 15** (App Router, TypeScript, standalone output)
 - **Tailwind CSS** for the dark UI
-- **D3** for scales, shapes and axes — marks are rendered by React so every chart is
-  reactive and tooltip-driven
+- **D3** for scales, shapes and axes - marks are rendered by React so every chart is reactive and tooltip-driven
 - **PapaParse** for CSV parsing, server-side
+
+---
+
+# Section A - Data Preparation and SQL Analysis
+
+Before developing the dashboard, the supplied CSV datasets were imported into **DB Browser for SQLite**. This stage ensured the data was correctly structured, cleaned where necessary, and suitable for SQL analysis.
+
+## Importing the datasets
+
+The provided `posts.csv` and `poststats.csv` files were imported into SQLite.
+
+The database schema was reviewed to ensure:
+
+- Appropriate data types were assigned
+- Primary and foreign keys were correctly configured
+- The relationship between `posts.video_id` and `poststats.video_id` was established
+
+---
+
+## Data normalisation
+
+### Converting dates to ISO format
+
+The `poststats.data_date` column was stored as `DD/MM/YYYY`, which SQLite does not treat as a standard date format. This prevented reliable filtering and chronological ordering when executing SQL queries.
+
+The dates were normalised into ISO (`YYYY-MM-DD`) format using:
+
+```sql
+UPDATE poststats
+SET data_date =
+    substr(data_date, 7, 4) || '-' ||
+    substr(data_date, 4, 2) || '-' ||
+    substr(data_date, 1, 2)
+WHERE data_date LIKE '__/__/____';
+```
+
+### Converting mixed data types
+
+Inspection of the `views` column showed that it contained mixed storage types.
+
+The following query was used to identify the different data types:
+
+```sql
+SELECT typeof(views), COUNT(*)
+FROM poststats
+GROUP BY typeof(views);
+```
+
+The values were then converted into integers:
+
+```sql
+UPDATE poststats
+SET views = CAST(views AS INTEGER);
+```
+
+---
+
+## SQL Analysis
+
+### 1. Total views per video
+
+Calculates the lifetime total number of views for every video.
+
+```sql
+SELECT
+    p.video_id,
+    p.title,
+    SUM(ps.views) AS total_views
+FROM posts p
+JOIN poststats ps
+    ON p.video_id = ps.video_id
+GROUP BY
+    p.video_id,
+    p.title
+ORDER BY total_views DESC;
+```
+
+### 2. Video views by video type over time
+
+Aggregates daily views for each video format (Shorts and Long Form).
+
+```sql
+SELECT
+    p.video_type,
+    ps.data_date,
+    SUM(ps.views) AS daily_views
+FROM posts p
+JOIN poststats ps
+    ON p.video_id = ps.video_id
+GROUP BY
+    p.video_type,
+    ps.data_date
+ORDER BY
+    ps.data_date ASC,
+    p.video_type;
+```
+
+### 3. Top five videos by views over the previous 28 days
+
+Returns the five highest-performing videos during the latest 28-day reporting period.
+
+```sql
+SELECT
+    p.video_id,
+    p.title,
+    SUM(ps.views) AS views_last_28_days
+FROM posts p
+JOIN poststats ps
+    ON p.video_id = ps.video_id
+WHERE ps.data_date >= (
+    SELECT DATE(MAX(data_date), '-28 days')
+    FROM poststats
+)
+GROUP BY
+    p.video_id,
+    p.title
+ORDER BY views_last_28_days DESC
+LIMIT 5;
+```
+
+---
+
+# Section B - Dashboard Implementation
 
 ## Running
 
-With Docker (serves on <http://localhost:3000>):
+### Docker
+
+The application can be started using Docker and is served on <http://localhost:3000>.
 
 ```bash
 docker compose up --build
 ```
 
-Locally:
+### Local development
 
 ```bash
 npm install
 npm run dev
 ```
 
+---
+
 ## Data model
 
-Two CSVs in `public/` are loaded automatically on first request and joined on `video_id`.
+Two CSV files located in `public/` are loaded automatically on the first request and joined using `video_id`.
 
-`posts.csv` — one row per post (2,326 rows in the bundled export):
+### `posts.csv`
+
+One row per post (2,326 rows in the bundled dataset).
 
 | Column | Notes |
 | --- | --- |
 | `post_id`, `video_id` | `video_id` is the join key |
-| `account_name` | 12 channels |
+| `account_name` | One of 12 YouTube channels |
 | `published_at_date` | ISO `YYYY-MM-DD` |
 | `video_type` | `Shorts` or `Long Form` |
-| `video_length` | **milliseconds** |
-| `title`, `text`, `video_url`, `thumbnail_url` | |
+| `video_length` | Stored in milliseconds |
+| `title`, `text`, `video_url`, `thumbnail_url` | Post metadata |
 
-`poststats.csv` — one row per post per day (187,974 rows):
+### `poststats.csv`
+
+One row per post per day (187,974 rows).
 
 | Column | Notes |
 | --- | --- |
-| `video_id` | join key |
-| `data_date` | **day-first** `DD/MM/YYYY` |
-| `likes`, `comments`, `shares`, `views` | daily deltas, not cumulative |
-| `watchtime` | daily delta in **minutes** |
+| `video_id` | Join key |
+| `data_date` | Source format `DD/MM/YYYY` |
+| `likes`, `comments`, `shares`, `views` | Daily metric deltas |
+| `watchtime` | Daily watch time in minutes |
 
-### Quirks handled during parsing
+---
 
-These are the reason the raw files understate performance if read naively:
+## Parsing considerations
 
-1. **Thousands separators.** Roughly 4% of metric cells are quoted with commas
-   (`"1,282,249"`). `Number()` returns `NaN` for those, which silently dropped the
-   highest-traffic days and understated total views by about 7.5x. `parseNumber` in
-   `src/lib/parse.ts` strips separators first.
-2. **Day-first dates.** `data_date` is `DD/MM/YYYY`, so `new Date()` misreads any day
-   above 12. `toIsoDate` normalises both files to ISO.
-3. **Negative likes.** Some daily rows carry negative like counts (unlikes). These are
-   genuine deltas and are preserved.
-4. **Missing watch time.** A small number of high-view posts report zero watch time, so
-   retention excludes them. The dashboard surfaces this as a warning insight rather than
-   hiding it.
+Several inconsistencies in the raw CSV files required additional handling during parsing.
 
-## What the dashboard shows
+### 1. Thousands separators
 
-KPI cards, then auto-generated written conclusions, then:
+Approximately 4% of metric values were written using quoted thousands separators, for example `"1,282,249"`.
 
-- **Channel share of views** — bubble chart where each channel's **area** is proportional
-  to its total views. D3's pack layout keeps the bubbles clustered in the centre. The
-  chart height scales between 360px and 560px with its container width, and hovering a
-  bubble shows the channel details without changing the active filters.
-- **Daily views and watch time** — dual-axis trend across the selected window
-- **Format split** — donuts for view share and watch-time share, plus a side-by-side
-  metric table for Shorts against Long Form
-- **Channel leaderboard** — total views and average views per post
-- **Retention against length** — scatter on a log axis, coloured by format
-- **Engagement against reach** — scatter that exposes outliers and regression to the mean
-- **Length bands and publishing day** — average views with a secondary retention line
-- **Top posts** — sortable table with thumbnails; clicking any row (or any scatter point)
-  opens a drawer with that post's full daily curve
+Passing these values directly to `Number()` returns `NaN`, causing the largest traffic days to be ignored and understating total views by approximately 7.5 times.
 
-Filters for channel, format and date range recompute everything client-side. KPI cards and
-the trend chart respect the date range because they derive from daily deltas; post-level
-panels are labelled as lifetime totals.
+The `parseNumber` helper in `src/lib/parse.ts` removes separators before converting the value.
 
-All charts observe their container width and redraw when it changes. Margins, chart
-heights, label truncation and tick counts tighten on narrow screens. The scatter plots use
-explicit, meaningful log-axis intervals rather than D3's dense minor ticks: video length
-is shown as readable durations (`0:10`, `1:00`, `10:00`, `3:00:00` on mobile), while
-reach uses compact powers of ten (`1K`, `10K`, `100K`, `1M`, `10M`).
+### 2. Day-first dates
 
-## Inspecting the data
+The `poststats.data_date` field uses `DD/MM/YYYY`, which JavaScript incorrectly interprets for many values when using `new Date()`.
 
-**View dataset** opens a row-level inspector for whichever dataset is active, built for
-checking that normalisation did what you expect. Each table shows the **raw CSV cells**
-next to the **values the dashboard derived from them**, so `"1,282,249"` sits beside
-`1282249` and `14/01/2026` beside `2026-01-14`. Raw cells still containing a separator are
-highlighted, and the source line number is pinned to the left of every row.
+The `toIsoDate` helper converts all dates into ISO format before processing.
 
-Rows are tagged with flags, counted across the whole file in the summary bar:
+### 3. Negative likes
+
+Some daily records contain negative like counts, representing users removing likes.
+
+These values are preserved because they are valid daily deltas.
+
+### 4. Missing watch time
+
+A small number of high-view posts report zero watch time.
+
+These posts are excluded from retention calculations, and the dashboard displays a warning rather than silently excluding them.
+
+---
+
+## Dashboard features
+
+The dashboard includes:
+
+- KPI summary cards
+- Automatically generated written insights
+- Channel share of views bubble chart
+- Daily views and watch time trend chart
+- Format comparison for Shorts and Long Form
+- Channel leaderboard
+- Retention against video length scatter plot
+- Engagement against reach scatter plot
+- Length band and publishing day analysis
+- Sortable top posts table
+- Individual post performance drawer
+
+Filters for channel, format and date range are applied entirely on the client.
+
+Daily KPI cards and trend charts respect the selected date range because they are calculated from daily deltas.
+
+Post-level visualisations are clearly labelled as lifetime totals.
+
+All charts automatically observe their container width and redraw when resized. Margins, chart heights, tick density and label truncation are adjusted for smaller displays.
+
+The scatter plots use meaningful logarithmic intervals rather than D3's default minor ticks. Video length is displayed as readable durations such as `0:10`, `1:00`, `10:00` and `3:00:00`, while reach is displayed using compact labels such as `1K`, `10K`, `100K`, `1M` and `10M`.
+
+---
+
+## Dataset inspector
+
+The **View dataset** feature provides a row-level inspection interface for validating the parsing process.
+
+Each row displays:
+
+- Original CSV values
+- Parsed values
+- Source line number
+- Parsing flags
+
+Rows containing comma-separated numeric values remain highlighted to demonstrate that parsing has been performed correctly.
+
+### Available flags
 
 | Flag | Meaning |
 | --- | --- |
-| `separators` | A metric cell was written with thousands separators |
-| `negative` | A metric is below zero (unlikes are legitimate) |
-| `non-numeric` | A non-empty metric could not be coerced to a number |
-| `bad-date` | `data_date` or `published_at_date` could not be parsed |
-| `orphan` | A poststats row references a `video_id` with no post |
-| `no-stats` | A post has no matching poststats rows |
-| `duplicate-id` | A repeated `video_id` in posts, ignored during the build |
-| `zero-length` | `video_length` resolved to zero seconds |
+| `separators` | A metric contains thousands separators |
+| `negative` | A metric value is below zero |
+| `non-numeric` | A non-empty metric could not be converted into a number |
+| `bad-date` | A date value could not be parsed |
+| `orphan` | A `poststats` row has no matching post |
+| `no-stats` | A post has no matching statistics |
+| `duplicate-id` | A duplicate `video_id` exists in `posts` |
+| `zero-length` | A video's duration resolves to zero seconds |
 
-Filter to **Flagged** or **Comma values** to jump straight to the rows that exercise the
-parsing edge cases, search across raw and derived cells, page through at up to 200 rows,
-and export the current page as JSON. On the bundled export, posts reports no anomalies and
-poststats reports 29,930 rows with separators plus 3,286 with negative metrics.
+The inspector allows users to:
+
+- Filter flagged rows
+- Search raw and parsed values
+- Page through up to 200 rows
+- Export the current page as JSON
+
+For the bundled dataset:
+
+- `posts` reports no anomalies.
+- `poststats` reports:
+  - 29,930 rows containing thousands separators
+  - 3,286 rows containing negative metric values
+
+---
 
 ## Replacing the data
 
-Use **Replace CSVs** in the dashboard to upload a new `posts` and `poststats` pair.
-Headers are validated before anything is swapped, and a bad pair returns a specific error
-naming the missing columns. Uploads are held in memory for the process lifetime only —
-nothing is written to disk, so the container filesystem stays read-only and
-**Restore bundled data** always returns to the files in `public/`.
+The **Replace CSVs** feature allows users to upload a replacement `posts.csv` and `poststats.csv` pair.
+
+The upload process:
+
+- Validates all required column headers
+- Returns specific validation errors if required columns are missing
+- Stores uploaded files in memory only
+- Does not write data to disk
+- Allows the bundled dataset to be restored at any time
+
+---
 
 ## API
 
 | Route | Purpose |
 | --- | --- |
-| `GET /api/dataset` | Parsed, aggregated payload for the active dataset |
-| `POST /api/dataset` | Multipart upload of `posts` + `poststats` |
-| `DELETE /api/dataset` | Discard the upload and restore the bundled files |
-| `GET /api/dataset/video/[id]` | Daily series for a single post |
-| `GET /api/dataset/rows` | Raw and normalised rows for the inspector |
+| `GET /api/dataset` | Returns the parsed and aggregated dataset |
+| `POST /api/dataset` | Uploads replacement CSV files |
+| `DELETE /api/dataset` | Restores the bundled dataset |
+| `GET /api/dataset/video/[id]` | Returns the daily series for a single video |
+| `GET /api/dataset/rows` | Returns raw and parsed rows for the dataset inspector |
 
-`/api/dataset/rows` accepts `table=posts\|poststats`, `offset`, `limit` (max 200),
-`q` for a substring search across all cells, and `filter=all\|flagged\|separators`. It
-rescans the source text per request so nothing extra is held in memory between calls:
+`/api/dataset/rows` accepts the following query parameters:
+
+| Parameter | Description |
+| --- | --- |
+| `table` | `posts` or `poststats` |
+| `offset` | Starting row |
+| `limit` | Maximum of 200 rows |
+| `q` | Searches across all cells |
+| `filter` | `all`, `flagged` or `separators` |
+
+Example:
 
 ```bash
-curl 'http://localhost:3000/api/dataset/rows?table=poststats&filter=separators&limit=5'
+curl "http://localhost:3000/api/dataset/rows?table=poststats&filter=separators&limit=5"
 ```
 
-The client receives post-level totals plus daily rows grouped by date, channel and format
-(about 3,800 rows) rather than the full 188,000-row table, so every filter combination is
-recomputed locally without another round trip.
+The client receives post-level totals together with daily statistics grouped by date, channel and format (approximately 3,800 rows). This allows every dashboard filter combination to be recalculated on the client without requiring additional API requests.

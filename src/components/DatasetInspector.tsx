@@ -108,7 +108,7 @@ export default function DatasetInspector({ onClose }: { onClose: () => void }) {
   const pages = result ? Math.max(1, Math.ceil(result.total / limit)) : 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/80 p-3 backdrop-blur-sm sm:p-6">
+    <div className="fixed inset-0 z-50 flex flex-col bg-black/30 p-3 backdrop-blur-sm sm:p-6">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 px-4 py-3">
           <div>

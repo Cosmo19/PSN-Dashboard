@@ -2,8 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+
+  --slate-50: 248 250 252;
+  --slate-100: 241 245 249;
+  --slate-200: 226 232 240;
+  --slate-300: 203 213 225;
+  --slate-400: 148 163 184;
+  --slate-500: 100 116 139;
+  --slate-600: 71 85 105;
+  --slate-700: 51 65 85;
+  --slate-800: 30 41 59;
+  --slate-900: 15 23 42;
+  --slate-950: 2 6 23;
+  --strong-text: 255 255 255;
+  --surface: 15 23 42;
+  --surface-raised: 30 41 59;
+  --surface-border: 51 65 85;
+  --accent: 56 189 248;
+  --accent-muted: 14 165 233;
+
+  --chart-grid: 51 65 85;
+  --chart-axis: 71 85 105;
+  --chart-hover: 226 232 240;
+  --chart-point-stroke: 15 23 42;
+  --chart-row-hover: 30 41 59;
+  --bubble-outline: 15 23 42;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --slate-50: 15 23 42;
+  --slate-100: 30 41 59;
+  --slate-200: 51 65 85;
+  --slate-300: 71 85 105;
+  --slate-400: 100 116 139;
+  --slate-500: 148 163 184;
+  --slate-600: 203 213 225;
+  --slate-700: 226 232 240;
+  --slate-800: 241 245 249;
+  --slate-900: 248 250 252;
+  --slate-950: 255 255 255;
+  --strong-text: 15 23 42;
+  --surface: 248 250 252;
+  --surface-raised: 255 255 255;
+  --surface-border: 226 232 240;
+  --accent: 2 132 199;
+  --accent-muted: 3 105 161;
+
+  --chart-grid: 226 232 240;
+  --chart-axis: 203 213 225;
+  --chart-hover: 15 23 42;
+  --chart-point-stroke: 255 255 255;
+  --chart-row-hover: 241 245 249;
+  --bubble-outline: 255 255 255;
+}
+
 body {
   @apply bg-surface text-slate-100 antialiased;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+::selection {
+  @apply bg-accent/20 text-slate-50;
 }
 
 ::-webkit-scrollbar {
@@ -12,9 +77,13 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-surface;
+  @apply bg-slate-800;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply rounded-full bg-surface-border;
+  @apply rounded-full bg-slate-600;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-500;
 }

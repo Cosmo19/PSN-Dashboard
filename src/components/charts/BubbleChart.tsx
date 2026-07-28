@@ -146,7 +146,11 @@ export default function BubbleChart({
                 r={leaf.r}
                 fill={leaf.fill}
                 fillOpacity={dimmed ? 0.3 : 0.9}
-                stroke={hover === leaf.key ? "#e2e8f0" : "#0f172a"}
+                stroke={
+                  hover === leaf.key
+                    ? "rgb(var(--chart-hover))"
+                    : "rgb(var(--bubble-outline))"
+                }
                 strokeWidth={hover === leaf.key ? 2 : 1}
               />
 

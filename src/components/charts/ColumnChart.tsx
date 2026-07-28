@@ -99,7 +99,11 @@ export default function ColumnChart({
         <g transform={`translate(${margin.left},${margin.top})`}>
           {scales.y.ticks(4).map((tick) => (
             <g key={tick} transform={`translate(0,${scales.y(tick)})`}>
-              <line x2={innerWidth} stroke="#334155" strokeDasharray="2 4" />
+              <line
+                x2={innerWidth}
+                stroke="rgb(var(--chart-grid))"
+                strokeDasharray="2 4"
+              />
               <text x={-8} dy="0.32em" textAnchor="end" className="fill-slate-500 text-[10px]">
                 {formatValue(tick)}
               </text>

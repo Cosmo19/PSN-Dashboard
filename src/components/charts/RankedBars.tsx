@@ -82,7 +82,11 @@ export default function RankedBars({
                   y={y}
                   width={width}
                   height={ROW_HEIGHT}
-                  fill={hover === index ? "#1e293b" : "transparent"}
+                  fill={
+                    hover === index
+                      ? "rgb(var(--chart-row-hover))"
+                      : "transparent"
+                  }
                 />
                 <text
                   x={-10}

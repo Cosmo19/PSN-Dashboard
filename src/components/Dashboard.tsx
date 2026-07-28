@@ -26,6 +26,7 @@ import DatasetPanel from "./DatasetPanel";
 import FiltersBar from "./FiltersBar";
 import InsightsPanel from "./InsightsPanel";
 import KpiGrid, { type Kpi } from "./KpiGrid";
+import ThemeToggle from "./ThemeToggle";
 import TopVideosTable from "./TopVideosTable";
 import VideoDrawer from "./VideoDrawer";
 
@@ -238,10 +239,11 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen pb-16">
       <header className="border-b border-slate-700 bg-slate-900/80 backdrop-blur">
-        <div className="mx-auto max-w-[100rem] px-6 py-5">
+        <div className="mx-auto flex max-w-[100rem] items-center justify-between gap-4 px-6 py-5">
           <h1 className="text-2xl font-bold tracking-tight text-white">
             PSN Content Performance Dashboard
           </h1>
+          <ThemeToggle />
         </div>
       </header>
 

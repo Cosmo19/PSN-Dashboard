@@ -147,7 +147,11 @@ export default function ScatterChart({
         <g transform={`translate(${margin.left},${margin.top})`}>
           {scales.y.ticks(5).map((tick) => (
             <g key={tick} transform={`translate(0,${scales.y(tick)})`}>
-              <line x2={innerWidth} stroke="#334155" strokeDasharray="2 4" />
+              <line
+                x2={innerWidth}
+                stroke="rgb(var(--chart-grid))"
+                strokeDasharray="2 4"
+              />
               <text x={-8} dy="0.32em" textAnchor="end" className="fill-slate-500 text-[10px]">
                 {formatY(tick)}
               </text>
@@ -159,7 +163,7 @@ export default function ScatterChart({
               <line
                 y1={innerHeight}
                 y2={innerHeight + 4}
-                stroke="#475569"
+                stroke="rgb(var(--chart-axis))"
               />
               <text
                 y={innerHeight + 16}
@@ -179,7 +183,9 @@ export default function ScatterChart({
               r={hover === index ? 6 : 3.5}
               fill={colors[point.group] ?? "#94a3b8"}
               fillOpacity={hover === null || hover === index ? 0.68 : 0.22}
-              stroke={hover === index ? "#e2e8f0" : "none"}
+              stroke={
+                hover === index ? "rgb(var(--chart-hover))" : "none"
+              }
               strokeWidth={1.5}
               className={onSelect ? "cursor-pointer" : undefined}
               onMouseEnter={() => setHover(index)}

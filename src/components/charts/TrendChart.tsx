@@ -126,7 +126,11 @@ export default function TrendChart({ data, height = 300 }: TrendChartProps) {
         <g transform={`translate(${margin.left},${margin.top})`}>
           {chart.yViews.ticks(5).map((tick) => (
             <g key={tick} transform={`translate(0,${chart.yViews(tick)})`}>
-              <line x2={innerWidth} stroke="#334155" strokeDasharray="2 4" />
+              <line
+                x2={innerWidth}
+                stroke="rgb(var(--chart-grid))"
+                strokeDasharray="2 4"
+              />
               <text x={-10} dy="0.32em" textAnchor="end" className="fill-slate-500 text-[10px]">
                 {formatCompact(tick)}
               </text>
@@ -176,7 +180,7 @@ export default function TrendChart({ data, height = 300 }: TrendChartProps) {
                 x2={chart.x(active.parsed)}
                 y1={0}
                 y2={innerHeight}
-                stroke="#94a3b8"
+                stroke="rgb(var(--chart-axis))"
                 strokeDasharray="3 3"
               />
               <circle
@@ -184,7 +188,7 @@ export default function TrendChart({ data, height = 300 }: TrendChartProps) {
                 cy={chart.yViews(active.views)}
                 r={4}
                 fill="#38bdf8"
-                stroke="#0f172a"
+                stroke="rgb(var(--chart-point-stroke))"
                 strokeWidth={1.5}
               />
               <circle
@@ -192,7 +196,7 @@ export default function TrendChart({ data, height = 300 }: TrendChartProps) {
                 cy={chart.yWatch(active.watchHours)}
                 r={4}
                 fill="#f59e0b"
-                stroke="#0f172a"
+                stroke="rgb(var(--chart-point-stroke))"
                 strokeWidth={1.5}
               />
             </g>

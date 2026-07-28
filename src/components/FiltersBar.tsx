@@ -96,7 +96,7 @@ export default function FiltersBar({ meta, filters, onChange }: FiltersBarProps)
             min={meta.minDate}
             max={filters.to}
             onChange={(event) => onChange({ ...filters, from: event.target.value })}
-            className="rounded-md border border-slate-600 bg-slate-900 px-2 py-1 text-slate-200 [color-scheme:dark]"
+            className="rounded-md border border-slate-600 bg-slate-900 px-2 py-1 text-slate-200"
           />
         </label>
 
@@ -108,7 +108,7 @@ export default function FiltersBar({ meta, filters, onChange }: FiltersBarProps)
             min={filters.from}
             max={meta.maxDate}
             onChange={(event) => onChange({ ...filters, to: event.target.value })}
-            className="rounded-md border border-slate-600 bg-slate-900 px-2 py-1 text-slate-200 [color-scheme:dark]"
+            className="rounded-md border border-slate-600 bg-slate-900 px-2 py-1 text-slate-200"
           />
         </label>
 

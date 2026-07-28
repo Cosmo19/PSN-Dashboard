@@ -87,7 +87,7 @@ export default function VideoDrawer({
         type="button"
         aria-label="Close details"
         onClick={onClose}
-        className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
       />
 
       <aside className="relative flex h-full w-full max-w-2xl flex-col overflow-y-auto border-l border-slate-700 bg-slate-900 shadow-2xl">
